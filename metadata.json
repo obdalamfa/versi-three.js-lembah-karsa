@@ -1,0 +1,6 @@
+{
+  "name": "Lembah Karsa 3D",
+  "description": "Farming RPG & Life Simulator 3D ala Lembah Karsa dengan simulasi bertani, beternak, dungeon crawl, motif The Sims, dan desa nusantara.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
