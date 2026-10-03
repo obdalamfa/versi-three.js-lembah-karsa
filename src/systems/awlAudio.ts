@@ -475,6 +475,120 @@ class AWLAudioManager {
   public playPastureBell() {
     this.playChimes([1046, 1318], 0.35);
   }
+
+  // ─── AUTHENTIC AWL WHISTLE (Two-finger crisp whistle to call horse / dog) ───
+  public playWhistle() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1400, t);
+      osc.frequency.linearRampToValueAtTime(2600, t + 0.12);
+      osc.frequency.linearRampToValueAtTime(2200, t + 0.22);
+      osc.frequency.linearRampToValueAtTime(3100, t + 0.35);
+
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.35, t + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+
+      osc.start(t);
+      osc.stop(t + 0.4);
+    } catch {}
+  }
+
+  // ─── FOOTSTEP SOUND ───
+  public playFootstep(surface: 'grass' | 'wood' | 'dirt' = 'grass') {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      if (surface === 'wood') {
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(160, t);
+        osc.frequency.exponentialRampToValueAtTime(60, t + 0.06);
+      } else {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(surface === 'dirt' ? 120 : 90, t);
+        osc.frequency.exponentialRampToValueAtTime(40, t + 0.05);
+      }
+
+      gain.gain.setValueAtTime(0.08, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+
+      osc.start(t);
+      osc.stop(t + 0.06);
+    } catch {}
+  }
+
+  // ─── ANIMAL WASH SOUND (Warm water spray & soapy scrub) ───
+  public playWashAnimal() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(400, t);
+      osc.frequency.linearRampToValueAtTime(850, t + 0.15);
+      osc.frequency.linearRampToValueAtTime(500, t + 0.3);
+
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(0.25, t + 0.1);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+
+      osc.start(t);
+      osc.stop(t + 0.35);
+    } catch {}
+  }
+
+  // ─── ICONIC HARVEST MOON ITEM FANFARE (Holding item above head!) ───
+  public playItemAcquired() {
+    this.playChimes([523.25, 659.25, 783.99, 1046.5], 0.32);
+  }
+
+  // ─── TARTAN TALKING SOUND ───
+  public playTartanGrunt() {
+    if (!this.enabled) return;
+    this.init();
+    if (!this.ctx || !this.sfxGain) return;
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(180, t);
+      osc.frequency.linearRampToValueAtTime(320, t + 0.08);
+      osc.frequency.linearRampToValueAtTime(140, t + 0.18);
+
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+
+      osc.start(t);
+      osc.stop(t + 0.2);
+    } catch {}
+  }
 }
 
 export const awlAudio = new AWLAudioManager();

@@ -11,6 +11,8 @@ import { AWLFishingModal } from './components/AWLFishingModal';
 import { AWLCookingModal } from './components/AWLCookingModal';
 import { AWLDiaryModal } from './components/AWLDiaryModal';
 import { AWLShippingModal } from './components/AWLShippingModal';
+import { AWLTartanModal } from './components/AWLTartanModal';
+import { AWLHarvestSpritesModal } from './components/AWLHarvestSpritesModal';
 
 import {
   AWLGameState,
@@ -20,6 +22,7 @@ import {
   SoilTileState,
   Recipe,
   DigSiteRelic,
+  InventoryItem,
 } from './types/awlTypes';
 import {
   CROPS,
@@ -71,6 +74,7 @@ const DEFAULT_STATE: AWLGameState = {
     rotation: 0,
     activeTool: 'cangkul',
     activeSeed: 'benih_tomat' as unknown as CropId,
+    heldItem: null,
   },
   stats: {
     stamina: 100,
@@ -104,7 +108,7 @@ export const App: React.FC = () => {
 
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [activeModal, setActiveModal] = useState<
-    'bag' | 'animals' | 'cooking' | 'diary' | 'shipping' | 'digSite' | 'fishing' | null
+    'bag' | 'animals' | 'cooking' | 'diary' | 'shipping' | 'digSite' | 'fishing' | 'tartan' | 'sprites' | null
   >(null);
   const [talkingVillagerId, setTalkingVillagerId] = useState<string | null>(null);
   const [toasts, setToasts] = useState<{ id: string; text: string; icon?: string }[]>([]);
@@ -472,6 +476,38 @@ export const App: React.FC = () => {
         awlAudio.playClick();
         setActiveModal('fishing');
       },
+      onWashStallClick: () => {
+        awlAudio.playWashAnimal();
+        const nearAnimal = Object.values(stateRef.current.animals).find(
+          (a) => Math.hypot(a.position.x - (-5), a.position.z - (-8)) <= 9.0
+        ) || Object.values(stateRef.current.animals)[0];
+
+        if (nearAnimal) {
+          world.spawnWashBubbles(nearAnimal.position.x, nearAnimal.position.z);
+          world.spawnHeartEmote(nearAnimal.position.x, nearAnimal.position.z);
+          setState((prev) => ({
+            ...prev,
+            animals: {
+              ...prev.animals,
+              [nearAnimal.id]: {
+                ...prev.animals[nearAnimal.id],
+                cleanliness: 100,
+                hearts: Math.min(5, prev.animals[nearAnimal.id].hearts + 1),
+                isWashed: true,
+              },
+            },
+          }));
+          showToast(`Mencuci ${nearAnimal.name} di tempat mandi! Bulunya kini bersih berkilau! 🧼✨`, '🧽');
+        }
+      },
+      onTartanClick: () => {
+        awlAudio.playTartanGrunt();
+        setActiveModal('tartan');
+      },
+      onHarvestSpritesClick: () => {
+        awlAudio.playHeartChime();
+        setActiveModal('sprites');
+      },
     });
 
     worldRef.current = world;
@@ -490,7 +526,8 @@ export const App: React.FC = () => {
       state.player.z,
       state.player.rotation,
       state.stats.isRidingHorse,
-      state.player.activeTool
+      state.player.activeTool,
+      state.player.heldItem
     );
     worldRef.current.syncSoilAndCrops(state.soil);
     worldRef.current.syncAnimals(state.animals);
@@ -553,6 +590,57 @@ export const App: React.FC = () => {
     return () => clearInterval(timer);
   }, [advanceToNextDay, showToast]);
 
+  // ─── AUTHENTIC AWL TWO-FINGER WHISTLE ───
+  const handleWhistle = useCallback(() => {
+    awlAudio.playWhistle();
+    if (worldRef.current) {
+      worldRef.current.spawnWhistleNotes(stateRef.current.player.x, stateRef.current.player.z);
+    }
+    setState((prev) => ({
+      ...prev,
+      animals: {
+        ...prev.animals,
+        spirit: {
+          ...prev.animals.spirit,
+          position: { x: prev.player.x - 1.6, z: prev.player.z + 0.6 },
+        },
+        barnaby: {
+          ...prev.animals.barnaby,
+          position: { x: prev.player.x + 1.2, z: prev.player.z + 0.5 },
+        },
+      },
+    }));
+    showToast('Bersiul nyaring! Spirit dan Barnaby berlari menghampirimu! 📢🐎', '🎵');
+  }, [showToast]);
+
+  // ─── TARTAN SEED COMBINER ───
+  const handleCombineSeeds = useCallback((seedAId: string, seedBId: string) => {
+    awlAudio.playItemAcquired();
+    setState((prev) => {
+      const nextInv = { ...prev.inventory };
+      if (nextInv[seedAId]) nextInv[seedAId].count = Math.max(0, nextInv[seedAId].count - 1);
+      if (nextInv[seedBId]) nextInv[seedBId].count = Math.max(0, nextInv[seedBId].count - 1);
+
+      const hybridKey = 'benih_tomelon';
+      nextInv[hybridKey] = {
+        id: hybridKey,
+        name: 'Benih Tomelon Hibrida (S)',
+        category: 'seed',
+        count: (nextInv[hybridKey]?.count || 0) + 1,
+        sellPrice: 150,
+        icon: '🍈',
+        description: 'Benih hibrida langka hasil persilangan Tartan dengan cita rasa manis berair.',
+      };
+
+      return {
+        ...prev,
+        inventory: nextInv,
+      };
+    });
+    showToast('Tartan berhasil menciptakan Benih Hibrida Tomelon Langka! 🌱✨', '🪴');
+    setActiveModal(null);
+  }, [showToast]);
+
   // ─── KEYBOARD SHORTCUTS & MOVEMENT ───
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -592,6 +680,8 @@ export const App: React.FC = () => {
       if (e.key === ' ' || e.code === 'Space') {
         e.preventDefault();
         handlePerformAction();
+      } else if (e.key === 'y' || e.key === 'Y') {
+        handleWhistle();
       } else if (e.key === 'q' || e.key === 'Q') {
         worldRef.current?.rotateCamera('left');
       } else if (e.key === 'e' || e.key === 'E') {
@@ -607,7 +697,7 @@ export const App: React.FC = () => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [activeModal, talkingVillagerId, handlePerformAction]);
+  }, [activeModal, talkingVillagerId, handlePerformAction, handleWhistle]);
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-stone-950 font-sans select-none">
@@ -628,6 +718,7 @@ export const App: React.FC = () => {
           setState((prev) => ({ ...prev, player: { ...prev.player, activeSeed: c } }));
         }}
         onPerformAction={handlePerformAction}
+        onWhistle={handleWhistle}
         onToggleHorseRide={() => {
           awlAudio.playHorseWhinny();
           setState((prev) => ({
@@ -651,6 +742,50 @@ export const App: React.FC = () => {
           });
         }}
         onRotateCamera={(dir) => worldRef.current?.rotateCamera(dir)}
+        onPutAwayHeldItem={() => {
+          setState((prev) => ({ ...prev, player: { ...prev.player, heldItem: null } }));
+          awlAudio.playClick();
+          showToast('Menyimpan barang kembali ke dalam tas.', '🎒');
+        }}
+        onEatHeldItem={() => {
+          if (!state.player.heldItem) return;
+          const item = state.player.heldItem;
+          awlAudio.playHarvest();
+          setState((prev) => {
+            const nextInv = { ...prev.inventory };
+            if (nextInv[item.id]) nextInv[item.id].count = Math.max(0, nextInv[item.id].count - 1);
+            return {
+              ...prev,
+              inventory: nextInv,
+              player: { ...prev.player, heldItem: null },
+              stats: {
+                ...prev.stats,
+                stamina: Math.min(prev.stats.maxStamina, prev.stats.stamina + 35),
+                fullness: Math.min(100, prev.stats.fullness + 30),
+              },
+            };
+          });
+          showToast(`Menikmati ${item.name}! (+35 Stamina & Kenyang)`, '🍎');
+        }}
+        onShipHeldItem={() => {
+          if (!state.player.heldItem) return;
+          const item = state.player.heldItem;
+          awlAudio.playHarvest();
+          setState((prev) => {
+            const nextInv = { ...prev.inventory };
+            if (nextInv[item.id]) nextInv[item.id].count = Math.max(0, nextInv[item.id].count - 1);
+            return {
+              ...prev,
+              inventory: nextInv,
+              player: { ...prev.player, heldItem: null },
+              shippingBin: {
+                ...prev.shippingBin,
+                [item.id]: (prev.shippingBin[item.id] || 0) + 1,
+              },
+            };
+          });
+          showToast(`Memasukkan ${item.name} ke kotak pengiriman Takakura! 📦`, '📦');
+        }}
         onOpenModal={(modal) => {
           awlAudio.playClick();
           setActiveModal(modal);
@@ -720,6 +855,14 @@ export const App: React.FC = () => {
           shippingBin={state.shippingBin}
           gold={state.stats.gold}
           onClose={() => setActiveModal(null)}
+          onHoldItem={(item) => {
+            awlAudio.playItemAcquired();
+            setState((prev) => ({
+              ...prev,
+              player: { ...prev.player, heldItem: item },
+            }));
+            showToast(`Mengangkat ${item.name} di atas kepala!`, item.icon);
+          }}
           onShipItem={(itemId, count) => {
             setState((prev) => {
               const nextInv = { ...prev.inventory };
@@ -1000,6 +1143,31 @@ export const App: React.FC = () => {
           shippingHistory={state.shippingHistory}
           inventory={state.inventory}
           onClose={() => setActiveModal(null)}
+        />
+      )}
+
+      {/* Tartan Hybrid Plant Modal */}
+      {activeModal === 'tartan' && (
+        <AWLTartanModal
+          inventory={state.inventory}
+          onClose={() => setActiveModal(null)}
+          onCombineSeeds={handleCombineSeeds}
+        />
+      )}
+
+      {/* Harvest Sprites Blessing Modal */}
+      {activeModal === 'sprites' && (
+        <AWLHarvestSpritesModal
+          stamina={state.stats.stamina}
+          onClose={() => setActiveModal(null)}
+          onReceiveSpriteBlessing={() => {
+            awlAudio.playHeartChime();
+            setState((prev) => ({
+              ...prev,
+              stats: { ...prev.stats, stamina: Math.min(prev.stats.maxStamina, prev.stats.stamina + 20) },
+            }));
+            showToast('Berkah Roh Dewi terasa menyegarkan tubuhmu! (+20 Energi) ✨', '🧚‍♂️');
+          }}
         />
       )}
 

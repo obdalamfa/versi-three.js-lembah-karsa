@@ -10,6 +10,7 @@ interface AWLBagModalProps {
   onClose: () => void;
   onShipItem: (itemId: string, count: number) => void;
   onEatItem: (itemId: string) => void;
+  onHoldItem: (item: InventoryItem) => void;
 }
 
 export const AWLBagModal: React.FC<AWLBagModalProps> = ({
@@ -19,6 +20,7 @@ export const AWLBagModal: React.FC<AWLBagModalProps> = ({
   onClose,
   onShipItem,
   onEatItem,
+  onHoldItem,
 }) => {
   const [filter, setFilter] = useState<'all' | 'produce' | 'animal_product' | 'seed' | 'relic' | 'cooked'>('all');
   const [selectedItemId, setSelectedItemId] = useState<string | null>(null);
@@ -145,6 +147,19 @@ export const AWLBagModal: React.FC<AWLBagModalProps> = ({
                 </div>
 
                 <div className="flex flex-col gap-2 pt-2">
+                  {/* Hold above head button (Iconic AWL feature!) */}
+                  {selectedItem.category !== 'tool' && (
+                    <button
+                      onClick={() => {
+                        onHoldItem(selectedItem);
+                        onClose();
+                      }}
+                      className="w-full py-2.5 px-3 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-stone-950 font-black text-xs flex items-center justify-center gap-2 transition shadow-md"
+                    >
+                      <span>🙌</span> Angkat di Atas Kepala
+                    </button>
+                  )}
+
                   {/* Ship button */}
                   {selectedItem.sellPrice > 0 && selectedItem.category !== 'tool' && (
                     <button

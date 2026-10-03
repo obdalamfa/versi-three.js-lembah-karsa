@@ -64,6 +64,7 @@ export interface AnimalState {
   hasProductToday: boolean;
   productQuality: 'B' | 'A' | 'S';
   daysSinceSheared?: number; // for sheep
+  isWashed?: boolean;
   position: { x: number; z: number };
 }
 
@@ -152,6 +153,7 @@ export interface AWLGameState {
     rotation: number;
     activeTool: ToolType;
     activeSeed: CropId;
+    heldItem: InventoryItem | null;
   };
   stats: PlayerStats;
   soil: Record<string, SoilTileState>; // key: "x_z"

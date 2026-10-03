@@ -1,6 +1,6 @@
 // ─── HARVEST MOON: A WONDERFUL LIFE 3D - FORGET-ME-NOT VALLEY THREE.JS ENGINE ───
 import * as THREE from 'three';
-import { AWLGameState, CropId, ToolType, Weather } from '../types/awlTypes';
+import { AWLGameState, CropId, ToolType, Weather, InventoryItem } from '../types/awlTypes';
 import { CROPS } from '../data/awlData';
 
 export interface World3DCallbacks {
@@ -12,6 +12,9 @@ export interface World3DCallbacks {
   onBarnBellClick: () => void;
   onDigSiteClick: () => void;
   onFishingPierClick: () => void;
+  onWashStallClick: () => void;
+  onTartanClick: () => void;
+  onHarvestSpritesClick: () => void;
 }
 
 export class AWLWorld3D {
@@ -359,6 +362,18 @@ export class AWLWorld3D {
 
     // 9. THE GODDESS SACRED SPRING (x: 0, z: -35)
     this.buildGoddessSpring(0, 0.5, -35);
+
+    // 10. ANIMAL WASH STALL (x: -5, z: -8)
+    this.buildWashStall(-5, 0, -8);
+
+    // 11. DOGHOUSE & BOWL (x: 5.5, z: 2.2)
+    this.buildDoghouse(5.5, 0, 2.2);
+
+    // 12. TARTAN THE TALKING PLANT (x: 7.8, z: 1.2)
+    this.buildTartan(7.8, 0, 1.2);
+
+    // 13. HARVEST SPRITES (NIC, NAK, FLAK) (x: 0, z: -33)
+    this.buildHarvestSprites(0, 1.2, -33);
   }
 
   private buildFarmhouse(x: number, y: number, z: number) {
@@ -689,6 +704,148 @@ export class AWLWorld3D {
     this.buildingsGroup.add(spring);
   }
 
+  private buildWashStall(x: number, y: number, z: number) {
+    const stall = new THREE.Group();
+    stall.position.set(x, y, z);
+
+    // Stone wash basin with drain
+    const basinMat = new THREE.MeshLambertMaterial({ color: 0x78716c });
+    const basin = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.25, 2.2), basinMat);
+    basin.position.y = 0.12;
+    basin.receiveShadow = true;
+    basin.name = 'wash_stall';
+    stall.add(basin);
+
+    // Low wooden boundary railing
+    const railMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+    for (const dz of [-1.1, 1.1]) {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.1, 0.08), railMat);
+      rail.position.set(0, 0.45, dz);
+      stall.add(rail);
+    }
+
+    // Water hose pole & nozzle
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.6), new THREE.MeshLambertMaterial({ color: 0x475569 }));
+    pole.position.set(-1.2, 0.8, 0);
+    stall.add(pole);
+
+    const hose = new THREE.Mesh(new THREE.TorusGeometry(0.3, 0.05, 6, 12), new THREE.MeshLambertMaterial({ color: 0x15803d }));
+    hose.position.set(-1.15, 0.8, 0);
+    hose.rotation.y = Math.PI / 2;
+    stall.add(hose);
+
+    // Wooden scrub brush & bucket
+    const bucket = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.16, 0.35, 8), new THREE.MeshLambertMaterial({ color: 0xb45309 }));
+    bucket.position.set(1.1, 0.3, 0.7);
+    stall.add(bucket);
+
+    this.buildingsGroup.add(stall);
+  }
+
+  private buildDoghouse(x: number, y: number, z: number) {
+    const house = new THREE.Group();
+    house.position.set(x, y, z);
+
+    const woodMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.1, 1.3), woodMat);
+    body.position.y = 0.55;
+    house.add(body);
+
+    const roofMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.7, 4), roofMat);
+    roof.position.y = 1.35;
+    roof.rotation.y = Math.PI / 4;
+    house.add(roof);
+
+    // Doorway opening
+    const door = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.65, 0.1), new THREE.MeshBasicMaterial({ color: 0x1c1917 }));
+    door.position.set(0, 0.38, 0.66);
+    house.add(door);
+
+    // Dog food bowl
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.18, 0.12, 8), new THREE.MeshLambertMaterial({ color: 0x2563eb }));
+    bowl.position.set(0.6, 0.06, 1.1);
+    house.add(bowl);
+
+    this.buildingsGroup.add(house);
+  }
+
+  private buildTartan(x: number, y: number, z: number) {
+    const tartan = new THREE.Group();
+    tartan.position.set(x, y, z);
+
+    // Clay pot
+    const potMat = new THREE.MeshLambertMaterial({ color: 0xc2410c });
+    const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.28, 0.6, 8), potMat);
+    pot.position.y = 0.3;
+    pot.name = 'tartan_pot';
+    tartan.add(pot);
+
+    // Green twisted stem
+    const stemMat = new THREE.MeshLambertMaterial({ color: 0x15803d });
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.7, 6), stemMat);
+    stem.position.y = 0.8;
+    tartan.add(stem);
+
+    // Two Heads (Iconic Tartan!)
+    const headMat = new THREE.MeshLambertMaterial({ color: 0x16a34a });
+    const headL = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), headMat);
+    headL.position.set(-0.25, 1.25, 0);
+    tartan.add(headL);
+
+    const mouthL = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.18, 6), new THREE.MeshLambertMaterial({ color: 0xef4444 }));
+    mouthL.rotation.z = Math.PI / 2;
+    mouthL.position.set(-0.4, 1.25, 0);
+    tartan.add(mouthL);
+
+    const headR = new THREE.Mesh(new THREE.SphereGeometry(0.22, 8, 8), headMat);
+    headR.position.set(0.25, 1.25, 0);
+    tartan.add(headR);
+
+    const mouthR = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.18, 6), new THREE.MeshLambertMaterial({ color: 0xef4444 }));
+    mouthR.rotation.z = -Math.PI / 2;
+    mouthR.position.set(0.4, 1.25, 0);
+    tartan.add(mouthR);
+
+    this.buildingsGroup.add(tartan);
+  }
+
+  private buildHarvestSprites(x: number, y: number, z: number) {
+    const spritesGroup = new THREE.Group();
+    spritesGroup.position.set(x, y, z);
+    spritesGroup.name = 'harvest_sprites';
+
+    // 3 Harvest Sprites: Nic (Blue), Nak (Red), Flak (Yellow)
+    const configs = [
+      { name: 'Nic', color: 0x3b82f6, offset: [-0.6, 0.3, 0] },
+      { name: 'Nak', color: 0xef4444, offset: [0, 0.45, 0.3] },
+      { name: 'Flak', color: 0xfacc15, offset: [0.6, 0.3, 0] },
+    ];
+
+    configs.forEach((c) => {
+      const sprite = new THREE.Group();
+      sprite.position.set(c.offset[0], c.offset[1], c.offset[2]);
+
+      const skin = new THREE.Mesh(new THREE.SphereGeometry(0.14, 6, 6), new THREE.MeshLambertMaterial({ color: 0xfed7aa }));
+      sprite.add(skin);
+
+      // Pointy sprite hat
+      const hat = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.35, 6), new THREE.MeshLambertMaterial({ color: c.color }));
+      hat.position.y = 0.22;
+      sprite.add(hat);
+
+      // Robe body
+      const robe = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.25, 6), new THREE.MeshLambertMaterial({ color: c.color }));
+      robe.position.y = -0.15;
+      robe.rotation.x = Math.PI;
+      sprite.add(robe);
+
+      spritesGroup.add(sprite);
+    });
+
+    this.buildingsGroup.add(spritesGroup);
+  }
+
   // ─── TREES & NATURE ───
   private buildTreesAndNature() {
     const treeCoords = [
@@ -770,6 +927,30 @@ export class AWLWorld3D {
     legR.position.set(0.16, 0.3, 0);
     legR.name = 'player_leg_R';
     this.playerMesh.add(legR);
+
+    // Arms (L & R)
+    const armMat = new THREE.MeshLambertMaterial({ color: 0xdc2626 });
+    const armL = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.55), armMat);
+    armL.position.set(-0.35, 1.05, 0);
+    armL.name = 'player_arm_L';
+    this.playerMesh.add(armL);
+
+    const armR = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.55), armMat);
+    armR.position.set(0.35, 1.05, 0);
+    armR.name = 'player_arm_R';
+    this.playerMesh.add(armR);
+
+    // Rucksack on Back (Classic Harvest Moon feature!)
+    const bagMat = new THREE.MeshLambertMaterial({ color: 0x78350f });
+    const rucksack = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.48, 0.22), bagMat);
+    rucksack.position.set(0, 1.05, -0.26);
+    this.playerMesh.add(rucksack);
+
+    // Overhead Container for Item Held High Above Head (AWL Signature!)
+    const overheadContainer = new THREE.Group();
+    overheadContainer.name = 'player_overhead_container';
+    overheadContainer.position.set(0, 2.35, 0);
+    this.playerMesh.add(overheadContainer);
 
     // Tool Hand Container
     const toolHand = new THREE.Group();
@@ -1047,22 +1228,111 @@ export class AWLWorld3D {
   }
 
   // ─── PLAYER POSITION & ROTATION ───
-  public updatePlayer(x: number, z: number, rotation: number, isRiding: boolean, activeTool: ToolType) {
+  public updatePlayer(
+    x: number,
+    z: number,
+    rotation: number,
+    isRiding: boolean,
+    activeTool: ToolType,
+    heldItem: InventoryItem | null = null
+  ) {
     this.playerPosition.set(x, isRiding ? 0.7 : 0, z);
     this.playerGroup.position.copy(this.playerPosition);
     this.playerTargetRotation = rotation;
     this.playerGroup.rotation.y = rotation;
     this.isRiding = isRiding;
 
-    // Attach tool visual in hand
-    const hand = this.playerMesh.getObjectByName('player_tool_hand') as THREE.Group;
-    if (hand && this.playerToolMesh) {
-      hand.remove(this.playerToolMesh);
-      this.playerToolMesh = null;
+    const armL = this.playerMesh.getObjectByName('player_arm_L') as THREE.Mesh | undefined;
+    const armR = this.playerMesh.getObjectByName('player_arm_R') as THREE.Mesh | undefined;
+    const overhead = this.playerMesh.getObjectByName('player_overhead_container') as THREE.Group | undefined;
+
+    if (overhead) {
+      while (overhead.children.length > 0) overhead.remove(overhead.children[0]);
+    }
+
+    if (heldItem && overhead && armL && armR) {
+      // Both arms raised high above head holding the item proudly (Classic Harvest Moon!)
+      armL.rotation.z = Math.PI * 0.75;
+      armR.rotation.z = -Math.PI * 0.75;
+      armL.position.y = 1.35;
+      armR.position.y = 1.35;
+
+      const itemModel = this.createHeldItemModel(heldItem);
+      overhead.add(itemModel);
+    } else if (armL && armR) {
+      armL.position.y = 1.05;
+      armR.position.y = 1.05;
+      armL.rotation.z = 0;
+      armR.rotation.z = 0;
     }
   }
 
-  // ─── PARTICLE EFFECTS (Hearts, Water Droplets, Sparkles) ───
+  private createHeldItemModel(item: InventoryItem): THREE.Group {
+    const group = new THREE.Group();
+
+    if (item.id.includes('tomat') || item.id.includes('stroberi')) {
+      const fruit = new THREE.Mesh(new THREE.SphereGeometry(0.24, 8, 8), new THREE.MeshLambertMaterial({ color: 0xef4444 }));
+      group.add(fruit);
+      const calyx = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.08, 5), new THREE.MeshLambertMaterial({ color: 0x22c55e }));
+      calyx.position.y = 0.22;
+      group.add(calyx);
+    } else if (item.id.includes('semangka') || item.id.includes('melon')) {
+      const melon = new THREE.Mesh(new THREE.SphereGeometry(0.3, 8, 8), new THREE.MeshLambertMaterial({ color: 0x10b981 }));
+      group.add(melon);
+    } else if (item.id.includes('susu')) {
+      const bottle = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.18, 0.45, 8), new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.1 }));
+      group.add(bottle);
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.1, 8), new THREE.MeshLambertMaterial({ color: 0x2563eb }));
+      cap.position.y = 0.26;
+      group.add(cap);
+    } else if (item.id.includes('wol')) {
+      const wool = new THREE.Mesh(new THREE.DodecahedronGeometry(0.28, 1), new THREE.MeshLambertMaterial({ color: 0xf1f5f9 }));
+      group.add(wool);
+    } else if (item.id.includes('telur')) {
+      const egg = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 8), new THREE.MeshLambertMaterial({ color: 0xfef08a }));
+      egg.scale.set(1, 1.3, 1);
+      group.add(egg);
+    } else if (item.category === 'relic') {
+      const relic = new THREE.Mesh(new THREE.DodecahedronGeometry(0.24, 0), new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.7, roughness: 0.2 }));
+      group.add(relic);
+    } else {
+      const box = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.3, 0.3), new THREE.MeshLambertMaterial({ color: 0xf59e0b }));
+      group.add(box);
+    }
+
+    return group;
+  }
+
+  // ─── PARTICLE EFFECTS (Hearts, Water Droplets, Sparkles, Whistle, Wash) ───
+  public spawnWhistleNotes(x: number, z: number) {
+    const noteMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    for (let i = 0; i < 4; i++) {
+      const note = new THREE.Mesh(new THREE.TorusGeometry(0.1, 0.03, 6, 8), noteMat);
+      note.position.set(x + (Math.random() - 0.5) * 0.6, 2.0 + i * 0.3, z + (Math.random() - 0.5) * 0.6);
+      this.fxGroup.add(note);
+      this.activeFX.push({
+        mesh: note,
+        vel: new THREE.Vector3((Math.random() - 0.5) * 0.5, 1.2, (Math.random() - 0.5) * 0.5),
+        life: 0,
+        maxLife: 0.9,
+      });
+    }
+  }
+
+  public spawnWashBubbles(x: number, z: number) {
+    const bubbleMat = new THREE.MeshBasicMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.8 });
+    for (let i = 0; i < 10; i++) {
+      const bubble = new THREE.Mesh(new THREE.SphereGeometry(0.12, 6, 6), bubbleMat);
+      bubble.position.set(x + (Math.random() - 0.5) * 1.2, 0.6 + Math.random() * 0.8, z + (Math.random() - 0.5) * 1.2);
+      this.fxGroup.add(bubble);
+      this.activeFX.push({
+        mesh: bubble,
+        vel: new THREE.Vector3((Math.random() - 0.5) * 0.4, 0.8 + Math.random() * 0.4, (Math.random() - 0.5) * 0.4),
+        life: 0,
+        maxLife: 0.7,
+      });
+    }
+  }
   public spawnHeartEmote(x: number, z: number) {
     const heartMat = new THREE.MeshBasicMaterial({ color: 0xf43f5e });
     const heart = new THREE.Mesh(new THREE.DodecahedronGeometry(0.22, 0), heartMat);
@@ -1198,6 +1468,9 @@ export class AWLWorld3D {
         let cur: THREE.Object3D | null = h.object;
         while (cur) {
           if (cur.name === 'water_well') { this.callbacks.onWellClick(); return; }
+          if (cur.name === 'wash_stall') { this.callbacks.onWashStallClick(); return; }
+          if (cur.name === 'tartan_pot') { this.callbacks.onTartanClick(); return; }
+          if (cur.name === 'harvest_sprites') { this.callbacks.onHarvestSpritesClick(); return; }
           if (cur.name === 'pasture_bell') { this.callbacks.onBarnBellClick(); return; }
           if (cur.name === 'dig_site_trench') { this.callbacks.onDigSiteClick(); return; }
           if (cur.name === 'fishing_pier') { this.callbacks.onFishingPierClick(); return; }
